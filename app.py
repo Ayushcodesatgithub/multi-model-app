@@ -44,8 +44,8 @@ if uploaded_file is not None:
         
         # IMPORTANT: Replace these with the actual column names your models expect.
         # The order of columns must match the order the models were trained on.
-        health_feature_columns = ['temperature', 'humidity', 'rainfall'] # Example columns
-        yield_feature_columns = ['nitrogen', 'phosphorus', 'potassium', 'ph'] # Example columns
+        health_feature_columns = ['Temperature', 'Humidity', 'Rainfall'] # Example columns
+        yield_feature_columns = ['N', 'P', 'K', 'Ph'] # Example columns
 
         # Ensure all required columns are in the uploaded file
         required_cols = set(health_feature_columns + yield_feature_columns)
