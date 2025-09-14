@@ -4,8 +4,6 @@ import numpy as np
 import onnxruntime as ort
 
 # --- MODEL LOADING ---
-
-# Use caching to load models only once and improve performance
 @st.cache_resource
 def load_model(model_path):
     """Loads a pre-trained ONNX model and returns the inference session."""
@@ -17,10 +15,9 @@ try:
     yield_model = load_model('yield_model.onnx')
 except Exception as e:
     st.error(f"Error loading models: {e}")
-    st.stop() # Stop the app if models can't be loaded
+    st.stop()
 
 # --- STREAMLIT APP INTERFACE ---
-
 st.title('🌾 Crop Health and Yield Prediction')
 
 st.write("""
@@ -37,49 +34,42 @@ if uploaded_file is not None:
         st.write("### Uploaded Data (First 5 Rows)")
         st.dataframe(df.head())
 
-        # Make a copy for processing to keep the original data unchanged
+        # Make a copy for processing
         df_processed = df.copy()
-        
-        # --- PREDICTION LOGIC ---
-        
-        # CORRECTED: These column names now exactly match your agriculture_dataset.csv
-        # IMPORTANT: Please verify the ORDER of columns is correct for what each model was trained on.
-        health_feature_columns = ['Temperature', 'Humidity', 'Rainfall'] 
-        yield_feature_columns = ['Nitrogen', 'Phosphorous', 'Potassium', 'ph']
 
-        # Ensure all required columns are in the uploaded file
+        # --- FEATURE SELECTION ---
+        # Updated according to your dataset column names
+        health_feature_columns = ['Temperature', 'Humidity', 'Rainfall']
+        yield_feature_columns = ['Soil_pH', 'Soil_Moisture']  # Adjusted for your dataset
+
+        # Ensure all required columns exist
         required_cols = set(health_feature_columns + yield_feature_columns)
         if not required_cols.issubset(df_processed.columns):
             st.error(f"CSV is missing required columns. Please ensure it contains: {list(required_cols)}")
         else:
-            # 2. Prepare data for each model and run inference
-            # Convert selected features to a NumPy array of type float32, which is standard for ONNX models.
-            
-            # Crop Health Prediction
+            # Convert to NumPy float32 arrays
             health_features = df_processed[health_feature_columns].to_numpy(dtype=np.float32)
+            yield_features = df_processed[yield_feature_columns].to_numpy(dtype=np.float32)
+
+            # Run inference on Health Model
             health_input_name = health_model.get_inputs()[0].name
             health_output_name = health_model.get_outputs()[0].name
             health_predictions = health_model.run([health_output_name], {health_input_name: health_features})[0]
-            
-            # Yield Prediction
-            yield_features = df_processed[yield_feature_columns].to_numpy(dtype=np.float32)
+
+            # Run inference on Yield Model
             yield_input_name = yield_model.get_inputs()[0].name
             yield_output_name = yield_model.get_outputs()[0].name
             yield_predictions = yield_model.run([yield_output_name], {yield_input_name: yield_features})[0]
 
-            # Add predictions as new columns to the DataFrame
-            # The .flatten() is used to convert the output array into a 1D format suitable for a DataFrame column.
+            # Add predictions to dataframe
             df['Health_Prediction_Label'] = health_predictions.flatten()
             df['Yield_Prediction_Label'] = yield_predictions.flatten()
 
-            # --- COMBINED PREDICTION OUTPUT ---
-            
+            # Display results
             st.write("### Combined Prediction Results")
-
-            # Simple output showing the original data with the new prediction labels
             st.dataframe(df)
 
-            # Optionally, add a download button for the results
+            # Download button
             @st.cache_data
             def convert_df_to_csv(df_to_convert):
                 return df_to_convert.to_csv(index=False).encode('utf-8')
