@@ -49,14 +49,17 @@ if uploaded_file is not None:
         else:
             # Convert to NumPy float32 arrays
             health_features = df_processed[health_feature_columns].to_numpy(dtype=np.float32)
-            yield_features = df_processed[yield_feature_columns].to_numpy(dtype=np.float32)
+            health_features = np.expand_dims(health_features, axis=1)  # (N, 1, F)
 
             # Run inference on Health Model
             health_input_name = health_model.get_inputs()[0].name
             health_output_name = health_model.get_outputs()[0].name
             health_predictions = health_model.run([health_output_name], {health_input_name: health_features})[0]
 
+
             # Run inference on Yield Model
+            yield_features = df_processed[yield_feature_columns].to_numpy(dtype=np.float32)
+            yield_features = np.expand_dims(yield_features, axis=1)  # (N, 1, F)
             yield_input_name = yield_model.get_inputs()[0].name
             yield_output_name = yield_model.get_outputs()[0].name
             yield_predictions = yield_model.run([yield_output_name], {yield_input_name: yield_features})[0]
