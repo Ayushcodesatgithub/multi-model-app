@@ -24,7 +24,7 @@ except Exception as e:
 st.title('🌾 Crop Health and Yield Prediction')
 
 st.write("""
-Upload a CSV file with crop data to get a combined prediction for crop health and potential yield.
+Upload your agriculture dataset CSV file to get a combined prediction for crop health and potential yield.
 """)
 
 # 1. File Uploader
@@ -34,7 +34,7 @@ if uploaded_file is not None:
     try:
         # Read the uploaded data
         df = pd.read_csv(uploaded_file)
-        st.write("### Uploaded Data")
+        st.write("### Uploaded Data (First 5 Rows)")
         st.dataframe(df.head())
 
         # Make a copy for processing to keep the original data unchanged
@@ -42,10 +42,10 @@ if uploaded_file is not None:
         
         # --- PREDICTION LOGIC ---
         
-        # IMPORTANT: Replace these with the actual column names your models expect.
-        # The order of columns must match the order the models were trained on.
-        health_feature_columns = ['Temperature', 'Humidity', 'Rainfall'] # Example columns
-        yield_feature_columns = ['N', 'P', 'K', 'Ph'] # Example columns
+        # CORRECTED: These column names now exactly match your agriculture_dataset.csv
+        # IMPORTANT: Please verify the ORDER of columns is correct for what each model was trained on.
+        health_feature_columns = ['Temperature', 'Humidity', 'Rainfall'] 
+        yield_feature_columns = ['Nitrogen', 'Phosphorous', 'Potassium', 'ph']
 
         # Ensure all required columns are in the uploaded file
         required_cols = set(health_feature_columns + yield_feature_columns)
@@ -69,31 +69,14 @@ if uploaded_file is not None:
 
             # Add predictions as new columns to the DataFrame
             # The .flatten() is used to convert the output array into a 1D format suitable for a DataFrame column.
-            df['Health Prediction'] = health_predictions.flatten()
-            df['Yield Prediction (tons/hectare)'] = yield_predictions.flatten()
+            df['Health_Prediction_Label'] = health_predictions.flatten()
+            df['Yield_Prediction_Label'] = yield_predictions.flatten()
 
             # --- COMBINED PREDICTION OUTPUT ---
             
             st.write("### Combined Prediction Results")
 
-            # This is a simple example of a "combined output". 
-            # You can create more complex rules based on your specific needs.
-            def get_recommendation(row):
-                # Example: Let's assume health prediction is categorical (0=Unhealthy, 1=Healthy)
-                # and yield is numerical.
-                is_healthy = row['Health Prediction'] == 1 # Change this condition based on your model's output
-                good_yield = row['Yield Prediction (tons/hectare)'] > 4 # Example threshold
-                
-                if is_healthy and good_yield:
-                    return "✅ Excellent Prospect"
-                elif is_healthy and not good_yield:
-                    return "⚠️ Healthy, but Low Yield Expected"
-                else:
-                    return "❌ Poor Prospect (Unhealthy)"
-
-            df['Recommendation'] = df.apply(get_recommendation, axis=1)
-            
-            # Display the final DataFrame with all predictions and recommendations
+            # Simple output showing the original data with the new prediction labels
             st.dataframe(df)
 
             # Optionally, add a download button for the results
@@ -105,7 +88,7 @@ if uploaded_file is not None:
             st.download_button(
                 label="Download results as CSV",
                 data=csv_output,
-                file_name='predictions.csv',
+                file_name='agriculture_predictions.csv',
                 mime='text/csv',
             )
 
